@@ -54,7 +54,7 @@ table public.character:
   token_id    uuid references public.asset(id) on delete set null
 
 function character.example_func:
-  args
+  accept
     id uuid
     some_value text
   declare
