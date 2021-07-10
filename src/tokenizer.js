@@ -116,7 +116,7 @@ module.exports = async function tokenizer (fileName) {
 
 	// Filter out any whitespace tokens that contain a single space
 	// (we'll keep tabs)
-	whitespaceIndexes.reverse(); // Work backwards so the indexes are fucked up
+	whitespaceIndexes.reverse(); // Work backwards so the indexes aren't fucked
 	for (let i = 0, l = whitespaceIndexes.length; i < l; i++) {
 		const token = tokens[whitespaceIndexes[i]];
 
