@@ -3,8 +3,8 @@
 interface table archive:
   columns:
     is_archived boolean default false# comment
-                Whether or not this item is archived (soft-deleted)
-                @omit create
+      Whether or not this item is archived (soft-deleted)
+      @omit create
     archived_at timestamptz
       When this item was archived
       @omit create,update

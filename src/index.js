@@ -5,7 +5,10 @@
 
 	switch (process.argv[2]) {
 		case 'tokenize':
-			console.log(await require('./tokenizer')(process.argv[3]));
+			console.dir(
+				await require('./tokenizer')(process.argv[3]),
+				{ 'maxArrayLength': null }
+			);
 			break;
 		default:
 			console.log('TODO: help');

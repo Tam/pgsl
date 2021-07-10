@@ -15,11 +15,9 @@ module.exports = async function tokenizer (fileName) {
 		crlfDelay: Infinity, // Support any type of linebreak combination
 	});
 
-	const tokens = []
-		, whitespaceIndexes = [];
+	const tokens = [];
 
 	// Loop over each line
-	lineLoop:
 	for await (const line of rl) {
 		let isIndenting = true,
 			word = '';
@@ -41,7 +39,7 @@ module.exports = async function tokenizer (fileName) {
 			const char = line.charAt(i);
 
 			// When we see a space or tab
-			if (/[ |\t]/.test(char)) {
+			if (char === ' ' || char === '\t') {
 
 				// If we're indenting, count it as part of an indent
 				if (isIndenting) {
@@ -62,24 +60,15 @@ module.exports = async function tokenizer (fileName) {
 					if (tokens[tokens.length - 1].type === 'WHITESPACE')
 						tokens[tokens.length - 1].value += char;
 
-					// Otherwise push a new indent token
-					else {
+					// Otherwise push a new whitespace token (if it's part of a
+					// sequence of spaces or a tab)
+					else if (char === '\t' || line.charAt(i + 1) === ' ')
 						tokens.push({ type: 'WHITESPACE', value: char });
-
-						// Stores it's index for later reference
-						whitespaceIndexes.push(tokens.length - 1);
-					}
 				}
 			}
 
-			// If the char is a # it's a comment
-			else if (char === '#') {
-				// Push the current word if we have one
-				pushWord();
-
-				// Skip the rest of the line
-				continue lineLoop;
-			}
+			// If the char is a # it's a comment, skip the rest of the line
+			else if (char === '#') break;
 
 			// If it's any other character
 			else {
@@ -114,15 +103,9 @@ module.exports = async function tokenizer (fileName) {
 		tokens.push({ type: 'EOL' });
 	}
 
-	// Filter out any whitespace tokens that contain a single space
-	// (we'll keep tabs)
-	whitespaceIndexes.reverse(); // Work backwards so the indexes aren't fucked
-	for (let i = 0, l = whitespaceIndexes.length; i < l; i++) {
-		const token = tokens[whitespaceIndexes[i]];
+	// Drop the last EOL
+	tokens.pop();
 
-		if (token.value === ' ')
-			delete tokens[whitespaceIndexes[i]];
-	}
-
-	return tokens.filter(Boolean);
+	// Return the tokens
+	return tokens;
 };
