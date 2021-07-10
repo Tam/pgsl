@@ -39,7 +39,7 @@ module.exports = async function tokenizer (fileName) {
 			const char = line.charAt(i);
 
 			// When we see a space or tab
-			if (char === ' ' || char === '\t') {
+			if (/[ \t]/.test(char)) {
 
 				// If we're indenting, count it as part of an indent
 				if (isIndenting) {
