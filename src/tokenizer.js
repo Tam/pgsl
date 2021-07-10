@@ -60,8 +60,8 @@ module.exports = async function tokenizer (fileName) {
 					if (tokens[tokens.length - 1].type === 'WHITESPACE')
 						tokens[tokens.length - 1].value += char;
 
-					// Otherwise push a new whitespace token (if it's part of a
-					// sequence of spaces or a tab)
+					// Otherwise push a new whitespace token (if it's a tab or
+					// part of a sequence of spaces)
 					else if (char === '\t' || line.charAt(i + 1) === ' ')
 						tokens.push({ type: 'WHITESPACE', value: char });
 				}
