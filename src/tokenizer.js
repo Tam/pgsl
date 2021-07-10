@@ -56,8 +56,14 @@ module.exports = async function tokenizer (fileName) {
 				else pushWord();
 			}
 
-			// If the char is a # it's a comment, skip the rest of the line
-			else if (char === '#') continue lineLoop;
+			// If the char is a # it's a comment
+			else if (char === '#') {
+				// Push the current word if we have one
+				pushWord();
+
+				// Skip the rest of the line
+				continue lineLoop;
+			}
 
 			// If it's any other character
 			else {
