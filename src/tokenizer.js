@@ -15,7 +15,8 @@ module.exports = async function tokenizer (fileName) {
 		crlfDelay: Infinity, // Support any type of linebreak combination
 	});
 
-	const tokens = [];
+	const tokens = []
+		, whitespaceIndexes = [];
 
 	// Loop over each line
 	lineLoop:
@@ -52,8 +53,23 @@ module.exports = async function tokenizer (fileName) {
 					else tokens.push({ type: 'INDENT', value: 1 });
 				}
 
-				// Otherwise treat it as the divider between words
-				else pushWord();
+				// If we're not indenting push the whitespace
+				else {
+					// Push the current word if we have one
+					pushWord();
+
+					// If we've already got a whitespace token, append the char
+					if (tokens[tokens.length - 1].type === 'WHITESPACE')
+						tokens[tokens.length - 1].value += char;
+
+					// Otherwise push a new indent token
+					else {
+						tokens.push({ type: 'WHITESPACE', value: char });
+
+						// Stores it's index for later reference
+						whitespaceIndexes.push(tokens.length - 1);
+					}
+				}
 			}
 
 			// If the char is a # it's a comment
@@ -98,5 +114,15 @@ module.exports = async function tokenizer (fileName) {
 		tokens.push({ type: 'EOL' });
 	}
 
-	return tokens;
+	// Filter out any whitespace tokens that contain a single space
+	// (we'll keep tabs)
+	whitespaceIndexes.reverse(); // Work backwards so the indexes are fucked up
+	for (let i = 0, l = whitespaceIndexes.length; i < l; i++) {
+		const token = tokens[whitespaceIndexes[i]];
+
+		if (token.value === ' ')
+			delete tokens[whitespaceIndexes[i]];
+	}
+
+	return tokens.filter(Boolean);
 };
