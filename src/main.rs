@@ -22,10 +22,8 @@ fn debug() {
 		.expect("failed to parse")
 		.next().unwrap();
 
-	println!("{:?}", file.as_rule());
-
 	for line in file.into_inner() {
-		debug_walk(line, 1);
+		debug_walk(line, 0);
 	}
 }
 
@@ -37,9 +35,17 @@ fn debug_walk(pair : Pair<Rule>, depth : usize) {
 	let mut pairs = pair.into_inner().peekable();
 
 	if pairs.peek().is_some() {
-		println!("{:indent$}{:?}", "", rule, indent = depth * 2);
+		println!(
+			"{:indent$}\x1b[96m{:?}\x1b[0m",
+			"", rule,
+			indent = depth * 2
+		);
 	} else {
-		println!("{:indent$}{:?}: {}", "", rule, value, indent = depth * 2);
+		println!(
+			"{:indent$}\x1b[36m{:?}\x1b[90m:\x1b[0m {}",
+			"", rule, value,
+			indent = depth * 2
+		);
 	}
 
 	for line in pairs {
