@@ -7,28 +7,33 @@ require = { "require" ~ end_dec ~ (indent ~ path* ~ NEWLINE+?)+ }
 path = @{ path_word ~ ("/" ~ path_word)* }
 path_word = @{ (!invalid_file_name_chars ~ !COMMENT ~ ANY)+ }
 invalid_file_name_chars = {
-  "/" | "\\" | "|" | ":" | "*" | "?" | "<" | ">" | "\"" | "'" | NEWLINE
+	"/" | "\\" | "|" | ":" | "*" | "?" | "<" | ">" | "\"" | "'" | NEWLINE
 }
 
 // Table rule
 /// Defines a table, the name can include a schema path in the form of schema.table
 table = {
- "table" ~ WHITE_SPACE+ ~ (schema_name ~ ".")? ~ table_name ~ end_dec
- ~ (extends)
+	"table" ~ WHITE_SPACE+ ~ (schema_name ~ ".")? ~ table_name ~ end_dec
+		~ (extends)
 }
 
 // Extends rule
 /// Defines a list of interfaces the table extends. Must appear as child of a table.
-extends = { indent ~ "extends" ~ end_dec ~ (indent{2} ~ interface_name ~ NEWLINE+?)+ }
+extends = {
+	indent ~ "extends" ~ end_dec
+		~ (indent{2} ~ interface_name ~ NEWLINE+?)+
+}
 
 // Misc utility rules
 // A lot of these are just aliases to make our AST clearer
 schema_name = @{ word }
 table_name = @{ word }
 interface_name = @{ word }
-word = @{ char+ }
+/// An sql-safe word
+word = @{ !ASCII_DIGIT ~ char+ }
 /// The end of a declaration, i.e. "require:", or "table name   :  "
 end_dec = _{ WHITE_SPACE* ~ ":" ~ " "* ~ NEWLINE+ }
+/// SQL-safe name chars
 char = { ASCII_ALPHANUMERIC | "_" }
 /// An indent is either two spaces, or a tab character
 indent = _{ "  " | "\t" }
