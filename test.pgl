@@ -1,0 +1,3 @@
+# hello world!
+require:
+	hello/world # example path

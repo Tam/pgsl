@@ -1,0 +1,19 @@
+//! Grammar file for PGSL, the Postgres Schema Language
+pgsl = { SOI ~ (NEWLINE | require)* ~ EOI }
+
+/// Require defines a list of PGSL files that this file needs
+require = { "require:" ~ NEWLINE+ ~ (indent ~ path* ~ NEWLINE+?)+ }
+path = @{ path_word ~ ("/" ~ path_word)* }
+path_word = @{ (!invalid_file_name_chars ~ !COMMENT ~ ANY)+ }
+
+invalid_file_name_chars = {
+  "/" | "\\" | "|" | ":" | "*" | "?" | "<" | ">" | "\"" | "'" | NEWLINE
+}
+word = { char+ }
+char = { ASCII_ALPHANUMERIC | "_" }
+/// An indent is either two spaces, or a tab character
+indent = _{ "  " | "\t" }
+
+/// Comments begin with a # symbol and continue to the end of the line.
+/// They can appear anywhere in the code.
+COMMENT = _{ WHITE_SPACE* ~ "#" ~ (!NEWLINE ~ ANY)* }
