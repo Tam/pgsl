@@ -1,54 +1,47 @@
+mod parser;
+
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
-use std::fs;
-use pest::iterators::Pair;
-use pest::Parser;
+use std::path::PathBuf;
+use clap::Parser;
 
-#[derive(Parser)]
-#[grammar = "pgsl.pest"]
-struct PGSLParser;
+#[derive(clap::Parser)]
+struct Cli {
+	/// The starting input file
+	///   Defaults to _schema.psl or schema/_schema.psl
+	#[arg(value_hint=clap::ValueHint::AnyPath)]
+	input : Option<PathBuf>,
+
+	/// Runs the debug stuff
+	#[arg(long,default_value_t=false)]
+	debug : bool,
+
+	/// Postgres hostname
+	#[arg(long)]
+	host : Option<String>,
+
+	/// Postgres database name
+	#[arg(short,long)]
+	database : Option<String>,
+
+	/// Postgres username
+	#[arg(short,long)]
+	username : Option<String>,
+
+	/// Postgres password (you should use an env var for this)
+	#[arg(short,long)]
+	password : Option<String>,
+
+	/// Postgres port
+	#[arg(long,default_value_t=5432)]
+	port : u16,
+}
 
 fn main() {
-	debug();
+	let cli = Cli::parse();
+
+	if cli.debug { parser::debug(cli.input); }
 }
 
-fn debug() {
-	let unparsed_file = fs::read_to_string("test.pgl")
-		.expect("failed to read file");
-
-	let file = PGSLParser::parse(Rule::pgsl, &unparsed_file)
-		.expect("failed to parse")
-		.next().unwrap();
-
-	for line in file.into_inner() {
-		debug_walk(line, 0);
-	}
-}
-
-fn debug_walk(pair : Pair<Rule>, depth : usize) {
-	if pair.as_rule() == Rule::EOI { return; }
-
-	let rule = pair.as_rule();
-	let value = pair.as_str();
-	let mut pairs = pair.into_inner().peekable();
-
-	if pairs.peek().is_some() {
-		println!(
-			"{:indent$}\x1b[96m{:?}\x1b[0m",
-			"", rule,
-			indent = depth * 2
-		);
-	} else {
-		println!(
-			"{:indent$}\x1b[36m{:?}\x1b[0m {}",
-			"", rule, value,
-			indent = depth * 2
-		);
-	}
-
-	for line in pairs {
-		debug_walk(line, depth + 1);
-	}
-}
