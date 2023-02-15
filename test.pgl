@@ -1,10 +1,12 @@
+
+
 # hello
 
 require:
   hello
 # spaces in file names are cool
-  worl d
-  ../my/file
+   worl d
+  ../my/file # hello
 
 table example:
   extends:

@@ -42,7 +42,7 @@ fn debug_walk(pair : Pair<Rule>, depth : usize) {
 		);
 	} else {
 		println!(
-			"{:indent$}\x1b[36m{:?}\x1b[90m:\x1b[0m {}",
+			"{:indent$}\x1b[36m{:?}\x1b[0m {}",
 			"", rule, value,
 			indent = depth * 2
 		);

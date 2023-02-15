@@ -1,5 +1,5 @@
 //! Grammar file for PGSL, the Postgres Schema Language
-pgsl = { SOI ~ (NEWLINE | require | table)* ~ EOI }
+pgsl = { SOI ~ NEWLINE* ~ (require | table)* ~ EOI }
 
 // Require rule
 /// Require defines a list of PGSL files that this file needs
@@ -35,7 +35,7 @@ word = @{ !ASCII_DIGIT ~ char+ }
 end_dec = _{ WHITE_SPACE* ~ ":" ~ " "* ~ NEWLINE+ }
 /// SQL-safe name chars
 char = { ASCII_ALPHANUMERIC | "_" }
-/// An indent is either two spaces, or a tab character
+/// An indent is either two spaces or a tab character
 indent = _{ "  " | "\t" }
 
 /// Comments begin with a # symbol and continue to the end of the line.
