@@ -7,6 +7,7 @@ extern crate pest_derive;
 use std::path::PathBuf;
 use clap::Parser;
 use dotenv::dotenv;
+use anyhow::Result;
 
 #[derive(clap::Parser)]
 struct Cli {
@@ -40,11 +41,21 @@ struct Cli {
 	port : u16,
 }
 
-fn main() {
+fn main() -> Result<()> {
 	dotenv().ok();
 	let cli = Cli::parse();
 
-	if cli.debug { parser::debug(cli.input); }
-	println!("{:?}", cli.host);
+	if cli.debug {
+		parser::debug(cli.input);
+		return Ok(());
+	}
+
+	let input = cli.input.unwrap_or(PathBuf::from("schema/_schema"));
+	let data = parser::parse(input)?;
+	println!("{data:#?}");
+
+	// println!("{:?}", cli.host);
+
+	Ok(())
 }
 
