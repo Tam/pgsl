@@ -6,7 +6,8 @@ edition = "2021"
 [dependencies]
 pest = "2.5.4"
 pest_derive = "2.5.5"
-clap = { version = "4.1.4", features = ["derive"] }
+clap = { version = "4.1.4", features = ["derive", "env"] }
+dotenv = { version = "0.15.0", features = ["clap"] }
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

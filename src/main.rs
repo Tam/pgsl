@@ -6,6 +6,7 @@ extern crate pest_derive;
 
 use std::path::PathBuf;
 use clap::Parser;
+use dotenv::dotenv;
 
 #[derive(clap::Parser)]
 struct Cli {
@@ -19,29 +20,31 @@ struct Cli {
 	debug : bool,
 
 	/// Postgres hostname
-	#[arg(long)]
+	#[arg(long,env="PGHOST")]
 	host : Option<String>,
 
 	/// Postgres database name
-	#[arg(short,long)]
+	#[arg(short,long,env="PGNAME")]
 	database : Option<String>,
 
 	/// Postgres username
-	#[arg(short,long)]
+	#[arg(short,long,env="PGUSER")]
 	username : Option<String>,
 
 	/// Postgres password (you should use an env var for this)
-	#[arg(short,long)]
+	#[arg(short,long,env="PGPASS")]
 	password : Option<String>,
 
 	/// Postgres port
-	#[arg(long,default_value_t=5432)]
+	#[arg(long,default_value_t=5432,env="PGPORT")]
 	port : u16,
 }
 
 fn main() {
+	dotenv().ok();
 	let cli = Cli::parse();
 
 	if cli.debug { parser::debug(cli.input); }
+	println!("{:?}", cli.host);
 }
 
