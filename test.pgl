@@ -8,6 +8,18 @@ require:
    worl d
   ../my/file # hello
 
+interface archive:
+	columns:
+		is_archived boolean default false# comment
+			Whether or not this item is archived (soft-deleted)
+			@omit create
+		archived_at timestamptz
+			When this item was archived
+			@omit create,update
+		restored_at timestamptz default
+			When this item was restored
+			@omit create,update
+
 table example:
   extends:
     timestamps

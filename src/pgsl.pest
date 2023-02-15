@@ -1,5 +1,5 @@
 //! Grammar file for PGSL, the Postgres Schema Language
-pgsl = { SOI ~ NEWLINE* ~ (require | table)* ~ EOI }
+pgsl = { SOI ~ NEWLINE* ~ (require | table | interface)* ~ EOI }
 
 // Require rule
 /// Require defines a list of PGSL files that this file needs
@@ -18,6 +18,13 @@ table = {
 }
 table_children = _{
 	(extends | columns) ~ table_children*
+}
+
+// Interface rule
+/// Defines an interface
+interface = {
+	"interface" ~ WHITE_SPACE+ ~ interface_name ~ end_dec
+		~ columns
 }
 
 // Extends rule

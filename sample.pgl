@@ -1,6 +1,6 @@
 # interfaces/archive.pgl
 
-interface table archive:
+interface archive:
 	columns:
 		is_archived boolean default false# comment
 			Whether or not this item is archived (soft-deleted)
