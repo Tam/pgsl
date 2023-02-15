@@ -14,7 +14,10 @@ invalid_file_name_chars = {
 /// Defines a table, the name can include a schema path in the form of schema.table
 table = {
 	"table" ~ WHITE_SPACE+ ~ (schema_name ~ ".")? ~ table_name ~ end_dec
-		~ (extends)
+		~ table_children
+}
+table_children = _{
+	(extends | columns) ~ table_children*
 }
 
 // Extends rule
@@ -24,11 +27,31 @@ extends = {
 		~ (indent{2} ~ interface_name ~ NEWLINE+?)+
 }
 
+// Columns rule
+/// Defines the columns of a table or interface
+columns = {
+	indent ~ "columns" ~ end_dec
+		~ (indent{2} ~ column ~ NEWLINE+?)+
+}
+
+// Column rule
+/// Defines a single column
+column = {
+	column_name ~ WHITE_SPACE+ ~ type_name
+	~ (!NEWLINE ~ WHITE_SPACE+ ~ column_attributes)?
+		~ (NEWLINE ~ indent{3} ~ WHITE_SPACE* ~ column_comment)*
+}
+column_attributes = { (!NEWLINE ~ ANY)* }
+column_comment = { (!NEWLINE ~ ANY)* }
+
 // Misc utility rules
 // A lot of these are just aliases to make our AST clearer
 schema_name = @{ word }
 table_name = @{ word }
 interface_name = @{ word }
+column_name = @{ word }
+type_name = @{ (type_name_word ~ ("." ~ type_name_word)+?) }
+type_name_word = @{ !ASCII_DIGIT ~ (char | "(" | ")")+ }
 /// An sql-safe word
 word = @{ !ASCII_DIGIT ~ char+ }
 /// The end of a declaration, i.e. "require:", or "table name   :  "

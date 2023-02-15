@@ -16,3 +16,20 @@ table private.account:
   extends:
     archive
     timestamps
+	columns:
+		id uuid
+		name varchar
+		attribution types.asset_attribution
+
+table public.character:
+	extends:
+		archive
+		timestamp
+	columns:
+		id					uuid primary key default public.uuid_generate_v1mc()
+		owner_id		uuid references public.user(id) on delete cascade
+								@omit
+								@description Hello world!
+		game_type	 text references game.type not null
+		name				varchar(256) not null
+		token_id		uuid references public.asset(id) on delete set null
