@@ -42,6 +42,6 @@ table public.character:
 		owner_id		uuid references public.user(id) on delete cascade
 								@omit
 								@description Hello world!
-		game_type	 text references game.type not null
+		game_type	  text references game.type not null
 		name				varchar(256) not null
 		token_id		uuid references public.asset(id) on delete set null
