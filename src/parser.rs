@@ -32,8 +32,21 @@ pub struct PGSLInterface {
 }
 
 #[derive(Debug, Default)]
+pub struct PGSLGrant {
+	pub privilege : String,
+	pub roles : Vec<String>,
+}
+
+#[derive(Debug, Default)]
+pub struct PGSLSchema {
+	pub name : String,
+	pub grants : Vec<PGSLGrant>,
+}
+
+#[derive(Debug, Default)]
 pub struct PGSLData {
 	pub requires : Vec<PathBuf>,
+	pub schemas : Vec<PGSLSchema>,
 	pub interfaces : HashMap<String, PGSLInterface>,
 	pub tables : Vec<PGSLTable>,
 }
@@ -61,11 +74,9 @@ pub fn parse (path : PathBuf) -> Result<PGSLData> {
 				let interface = parse_interface(line);
 				data.interfaces.insert(interface.name.clone(), interface);
 			},
-			Rule::table => {
-				let table = parse_table(line);
-				data.tables.push(table);
-			},
-			_ => unreachable!(),
+			Rule::table => data.tables.push(parse_table(line)),
+			Rule::schema => data.schemas.push(parse_schema(line)),
+			_ => unreachable!("Rule::{:?}", line.as_rule()),
 		}
 	}
 
@@ -100,6 +111,21 @@ fn parse_interface (lines : Pair<Rule>) -> PGSLInterface {
 	interface
 }
 
+/// Parses the schema rule
+fn parse_schema (lines : Pair<Rule>) -> PGSLSchema {
+	let mut schema = PGSLSchema::default();
+
+	for line in lines.into_inner() {
+		match line.as_rule() {
+			Rule::schema_name => schema.name = line.as_str().to_string(),
+			Rule::grant => schema.grants.push(parse_grant(line)),
+			_ => unreachable!(),
+		}
+	}
+
+	schema
+}
+
 /// Parses the table rule
 fn parse_table (lines : Pair<Rule>) -> PGSLTable {
 	let mut table = PGSLTable::default();
@@ -115,6 +141,21 @@ fn parse_table (lines : Pair<Rule>) -> PGSLTable {
 	}
 
 	table
+}
+
+/// Parses the grant rule
+fn parse_grant (lines : Pair<Rule>) -> PGSLGrant {
+	let mut grant = PGSLGrant::default();
+
+	for line in lines.into_inner() {
+		match line.as_rule() {
+			Rule::privilege => grant.privilege = line.as_str().to_string(),
+			Rule::role_name => grant.roles.push(line.as_str().to_string()),
+			_ => unreachable!(),
+		}
+	}
+
+	grant
 }
 
 /// Parses the extends rule

@@ -1,9 +1,9 @@
 //! Grammar file for PGSL, the Postgres Schema Language
-pgsl = { SOI ~ NEWLINE* ~ (require | table | interface)* ~ EOI }
+pgsl = { SOI ~ NEWLINE* ~ (require | table | interface | schema)* ~ EOI }
 
 // Require rule
 /// Require defines a list of PGSL files that this file needs
-require = { "require" ~ end_dec ~ (indent ~ path* ~ NEWLINE+?)+ }
+require = { ^"require" ~ end_dec ~ (indent ~ path* ~ NEWLINE+?)+ }
 path = @{ path_word ~ ("/" ~ path_word)* }
 path_word = @{ (!invalid_file_name_chars ~ !COMMENT ~ ANY)+ }
 invalid_file_name_chars = {
@@ -13,7 +13,7 @@ invalid_file_name_chars = {
 // Table rule
 /// Defines a table, the name can include a schema path in the form of schema.table
 table = {
-	"table" ~ WHITE_SPACE+ ~ (schema_name ~ ".")? ~ table_name ~ end_dec
+	^"table" ~ WHITE_SPACE+ ~ (schema_name ~ ".")? ~ table_name ~ end_dec
 		~ table_children
 }
 table_children = _{
@@ -23,21 +23,21 @@ table_children = _{
 // Interface rule
 /// Defines an interface
 interface = {
-	"interface" ~ WHITE_SPACE+ ~ interface_name ~ end_dec
+	^"interface" ~ WHITE_SPACE+ ~ interface_name ~ end_dec
 		~ columns
 }
 
 // Extends rule
 /// Defines a list of interfaces the table extends. Must appear as child of a table.
 extends = {
-	indent ~ "extends" ~ end_dec
+	indent ~ ^"extends" ~ end_dec
 		~ (indent{2} ~ interface_name ~ NEWLINE+?)+
 }
 
 // Columns rule
 /// Defines the columns of a table or interface
 columns = {
-	indent ~ "columns" ~ end_dec
+	indent ~ ^"columns" ~ end_dec
 		~ (indent{2} ~ column ~ NEWLINE+?)+
 }
 
@@ -51,12 +51,29 @@ column = {
 column_attributes = { (!NEWLINE ~ ANY)* }
 column_comment = { (!NEWLINE ~ ANY)* }
 
+// Schema rule
+/// Defines a schema
+schema = {
+	^"schema" ~ WHITE_SPACE+ ~ schema_name
+	~ ((end_dec ~ grant+) | NEWLINE+)
+}
+
+// Grant rule
+/// Defines a grant
+grant = {
+	indent ~ ^"grant" ~ WHITE_SPACE+ ~ privilege
+	~ WHITE_SPACE+ ~ ^"to" ~ WHITE_SPACE+
+	~ (role_name ~ (WHITE_SPACE* ~ "," ~ WHITE_SPACE* ~ role_name)*)
+	~ NEWLINE+
+}
+
 // Misc utility rules
 // A lot of these are just aliases to make our AST clearer
 schema_name = @{ word }
 table_name = @{ word }
 interface_name = @{ word }
 column_name = @{ word }
+role_name = @{ word }
 type_name = @{ (type_name_word ~ ("." ~ type_name_word)+?) }
 type_name_word = @{ !ASCII_DIGIT ~ (char | "(" | ")")+ }
 /// An sql-safe word
@@ -67,6 +84,24 @@ end_dec = _{ WHITE_SPACE* ~ ":" ~ " "* ~ NEWLINE+ }
 char = { ASCII_ALPHANUMERIC | "_" }
 /// An indent is either two spaces or a tab character
 indent = _{ "  " | "\t" }
+
+privilege = {
+	  ^"SELECT"
+	| ^"INSERT"
+	| ^"UPDATE"
+	| ^"DELETE"
+	| ^"TRUNCATE"
+	| ^"REFERENCES"
+	| ^"TRIGGER"
+	| ^"CREATE"
+	| ^"CONNECT"
+	| ^"TEMPORARY"
+	| ^"EXECUTE"
+	| ^"USAGE"
+	| ^"SET"
+	| ^"ALTER SYSTEM"
+	| ^"all"
+}
 
 /// Comments begin with a # symbol and continue to the end of the line.
 /// They can appear anywhere in the code.

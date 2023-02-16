@@ -32,8 +32,11 @@ require:
 	assets
 	game
 
+schema private
+
 schema character:
 	grant usage to anonymous, member
+	grant all to admin
 
 table public.character:
 	extends:

@@ -45,3 +45,9 @@ table public.character:
 		game_type	  text references game.type not null
 		name				varchar(256) not null
 		token_id		uuid references public.asset(id) on delete set null
+
+schema private
+
+schema character:
+	grant usage to anonymous, member
+	grant all to admin
