@@ -20,7 +20,7 @@ pub struct PGSLColumn {
 #[derive(Debug, Default)]
 pub struct PGSLTable {
 	pub name : String,
-	pub schema : String,
+	pub schema : Option<String>,
 	pub extends : Vec<String>,
 	pub columns : Vec<PGSLColumn>,
 }
@@ -44,11 +44,50 @@ pub struct PGSLSchema {
 }
 
 #[derive(Debug, Default)]
+pub struct PGSLArgument {
+	pub name : String,
+	pub type_of : String,
+	pub default : Option<String>,
+}
+
+#[derive(Debug, Default)]
+pub struct PGSLEnd {
+	pub language : String,
+	pub stability : String,
+	pub security : Option<String>,
+}
+
+#[derive(Debug, Default)]
+pub struct PGSLFunction {
+	pub schema : Option<String>,
+	pub name : String,
+	pub returns : Option<String>,
+	pub accept : Vec<PGSLArgument>,
+	pub declare : Vec<PGSLArgument>,
+	pub body : String,
+	pub end : PGSLEnd,
+}
+
+#[derive(Debug, Default)]
+pub struct PGSLTrigger {
+	pub when : String,
+	pub event : Vec<String>,
+	pub interface : bool,
+	pub schema : Option<String>,
+	pub name : String,
+	pub declare : Vec<PGSLArgument>,
+	pub body : String,
+	pub end : PGSLEnd,
+}
+
+#[derive(Debug, Default)]
 pub struct PGSLData {
 	pub requires : Vec<PathBuf>,
 	pub schemas : Vec<PGSLSchema>,
 	pub interfaces : HashMap<String, PGSLInterface>,
 	pub tables : Vec<PGSLTable>,
+	pub triggers : Vec<PGSLTrigger>,
+	pub functions : Vec<PGSLFunction>,
 }
 
 /// Parses the files at the given path into PGSLData
@@ -76,6 +115,8 @@ pub fn parse (path : PathBuf) -> Result<PGSLData> {
 			},
 			Rule::table => data.tables.push(parse_table(line)),
 			Rule::schema => data.schemas.push(parse_schema(line)),
+			Rule::trigger => data.triggers.push(parse_trigger(line)),
+			Rule::function => data.functions.push(parse_function(line)),
 			_ => unreachable!("Rule::{:?}", line.as_rule()),
 		}
 	}
@@ -132,7 +173,7 @@ fn parse_table (lines : Pair<Rule>) -> PGSLTable {
 
 	for line in lines.into_inner() {
 		match line.as_rule() {
-			Rule::schema_name => table.schema = line.as_str().to_string(),
+			Rule::schema_name => table.schema = Some(line.as_str().to_string()),
 			Rule::table_name => table.name = line.as_str().to_string(),
 			Rule::columns => table.columns = parse_columns(line),
 			Rule::extends => table.extends = parse_extends(line),
@@ -199,6 +240,100 @@ fn parse_column (lines : Pair<Rule>) -> PGSLColumn {
 	}
 
 	column
+}
+
+fn parse_trigger (lines : Pair<Rule>) -> PGSLTrigger {
+	let mut trigger = PGSLTrigger::default();
+
+	for line in lines.into_inner() {
+		match line.as_rule() {
+			Rule::trigger_when => trigger.when = line.as_str().to_string(),
+			Rule::trigger_event => trigger.event.push(line.as_str().to_string()),
+			Rule::trigger_interface => trigger.interface = true,
+			Rule::schema_name => trigger.schema = Some(line.as_str().to_string()),
+			Rule::trigger_name => trigger.name = line.as_str().to_string(),
+			Rule::declare => trigger.declare = parse_args(line),
+			Rule::begin => trigger.body = parse_begin(line),
+			Rule::end => trigger.end = parse_end(line),
+			_ => unreachable!(),
+		}
+	}
+
+	trigger
+}
+
+fn parse_function (lines : Pair<Rule>) -> PGSLFunction {
+	let mut function = PGSLFunction::default();
+
+	for line in lines.into_inner() {
+		match line.as_rule() {
+			Rule::schema_name => function.schema = Some(line.as_str().to_string()),
+			Rule::function_name => function.name = line.as_str().to_string(),
+			Rule::returns => function.returns = Some(line.as_str().to_string()),
+			Rule::accept => function.accept = parse_args(line),
+			Rule::declare => function.declare = parse_args(line),
+			Rule::begin => function.body = parse_begin(line),
+			Rule::end => function.end = parse_end(line),
+			_ => unreachable!(),
+		}
+	}
+
+	function
+}
+
+fn parse_argument (lines : Pair<Rule>) -> PGSLArgument {
+	let mut arg = PGSLArgument::default();
+
+	for line in lines.into_inner() {
+		match line.as_rule() {
+			Rule::argument_name => arg.name = line.as_str().to_string(),
+			Rule::type_name => arg.type_of = line.as_str().to_string(),
+			Rule::default_value => arg.default = Some(line.as_str().to_string()),
+			_ => unreachable!()
+		}
+	}
+
+	arg
+}
+
+fn parse_args (lines : Pair<Rule>) -> Vec<PGSLArgument> {
+	let mut args = Vec::new();
+
+	for line in lines.into_inner() {
+		if line.as_rule() == Rule::argument {
+			args.push(parse_argument(line));
+		} else { unreachable!() }
+	}
+
+	args
+}
+
+fn parse_begin (lines : Pair<Rule>) -> String {
+	let mut sql = String::new();
+
+	for line in lines.into_inner() {
+		if line.as_rule() == Rule::sql {
+			sql.push_str(line.as_str());
+			sql.push_str("\r\n");
+		} else { unreachable!() }
+	}
+
+	sql.trim().to_string()
+}
+
+fn parse_end (lines : Pair<Rule>) -> PGSLEnd {
+	let mut end = PGSLEnd::default();
+
+	for line in lines.into_inner() {
+		match line.as_rule() {
+			Rule::language_name => end.language = line.as_str().to_string(),
+			Rule::function_stability => end.stability = line.as_str().to_string(),
+			Rule::function_security => end.security = Some(line.as_str().to_string()),
+			_ => unreachable!(),
+		}
+	}
+
+	end
 }
 
 // region: Debug

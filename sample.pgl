@@ -12,7 +12,7 @@ interface archive:
 			When this item was restored
 			@omit create,update
 
-trigger before insert or update on archive:
+trigger before insert or update on interface archive:
 	begin:
 		if old.is_archived = false and new.is_archived = true then
 			new.archived_at = now();
@@ -22,6 +22,11 @@ trigger before insert or update on archive:
 
 		return new;
 	end plpgsql volatile
+
+trigger after delete on public.user:
+	begin:
+		# function
+	end plpgsql stable
 
 # character.pgl
 

@@ -1,5 +1,7 @@
 //! Grammar file for PGSL, the Postgres Schema Language
-pgsl = { SOI ~ NEWLINE* ~ (require | table | interface | schema)* ~ EOI }
+pgsl = { SOI ~ NEWLINE* ~ (
+	require | table | interface | schema | trigger | function
+)* ~ EOI }
 
 // Require rule
 /// Require defines a list of PGSL files that this file needs
@@ -67,6 +69,67 @@ grant = {
 	~ NEWLINE+
 }
 
+// Trigger rule
+/// Defines a trigger
+trigger = {
+	^"trigger" ~ WHITE_SPACE+ ~ trigger_when ~ WHITE_SPACE+
+	~ (trigger_event ~ (WHITE_SPACE+ ~ ^"or" ~ WHITE_SPACE+ ~ trigger_event)*)+
+	~ WHITE_SPACE+ ~ ^"on" ~ WHITE_SPACE+
+	~ (trigger_interface ~ WHITE_SPACE+)?
+	~ (schema_name ~ ".")? ~ trigger_name ~ end_dec
+		~ declare?
+        ~ begin
+        ~ end
+}
+
+// Function rule
+/// Defines a function
+function = {
+	^"function" ~ WHITE_SPACE+ ~ (schema_name ~ ".")? ~ function_name ~ end_dec
+		~ returns?
+		~ accept?
+		~ declare?
+		~ begin
+		~ end
+}
+
+// Function Parts
+returns = {
+	indent ~ ^"return" ~ end_dec
+		~ indent{2} ~ type_name ~ NEWLINE+
+}
+
+argument = {
+	indent{2} ~ argument_name ~ WHITE_SPACE+ ~ type_name
+	~ (WHITE_SPACE+ ~ "=" ~ WHITE_SPACE+ ~ default_value)?
+	~ NEWLINE+
+}
+
+accept = {
+	indent ~ ^"accept" ~ end_dec
+		~ argument*
+}
+
+declare = {
+	indent ~ ^"declare" ~ end_dec
+		~ argument*
+}
+
+begin = {
+	indent ~ ^"begin" ~ end_dec
+		~ (indent{2} ~ sql ~ NEWLINE+)*
+}
+
+sql = @{ (!NEWLINE ~ ANY)* }
+default_value = @{ (!NEWLINE ~ ANY)* }
+
+end = {
+	indent ~ "end" ~ WHITE_SPACE+ ~ language_name
+	~ WHITE_SPACE+ ~ function_stability ~ (WHITE_SPACE+ ~ function_security)?
+	~ NEWLINE+
+}
+
+
 // Misc utility rules
 // A lot of these are just aliases to make our AST clearer
 schema_name = @{ word }
@@ -74,34 +137,59 @@ table_name = @{ word }
 interface_name = @{ word }
 column_name = @{ word }
 role_name = @{ word }
+trigger_name = @{ word }
+function_name = @{ word }
+argument_name = @{ word }
+language_name = @{ word }
 type_name = @{ (type_name_word ~ ("." ~ type_name_word)+?) }
 type_name_word = @{ !ASCII_DIGIT ~ (char | "(" | ")")+ }
 /// An sql-safe word
 word = @{ !ASCII_DIGIT ~ char+ }
 /// The end of a declaration, i.e. "require:", or "table name   :  "
-end_dec = _{ WHITE_SPACE* ~ ":" ~ " "* ~ NEWLINE+ }
+end_dec = _{ WHITE_SPACE* ~ ":" ~ " "* ~ NEWLINE* }
 /// SQL-safe name chars
 char = { ASCII_ALPHANUMERIC | "_" }
 /// An indent is either two spaces or a tab character
 indent = _{ "  " | "\t" }
 
 privilege = {
-	  ^"SELECT"
-	| ^"INSERT"
-	| ^"UPDATE"
-	| ^"DELETE"
-	| ^"TRUNCATE"
-	| ^"REFERENCES"
-	| ^"TRIGGER"
-	| ^"CREATE"
-	| ^"CONNECT"
-	| ^"TEMPORARY"
-	| ^"EXECUTE"
-	| ^"USAGE"
-	| ^"SET"
-	| ^"ALTER SYSTEM"
+	  ^"select"
+	| ^"insert"
+	| ^"update"
+	| ^"delete"
+	| ^"truncate"
+	| ^"references"
+	| ^"trigger"
+	| ^"create"
+	| ^"connect"
+	| ^"temporary"
+	| ^"execute"
+	| ^"usage"
+	| ^"set"
+	| ^"alter system"
 	| ^"all"
 }
+
+trigger_when = {
+	  ^"before"
+	| ^"after"
+}
+
+trigger_interface = { ^"interface" }
+
+trigger_event = {
+	  ^"insert"
+	| ^"update"
+	| ^"delete"
+}
+
+function_stability = {
+	  ^"immutable"
+	| ^"stable"
+	| ^"volatile"
+}
+
+function_security = { ^"security definer" }
 
 /// Comments begin with a # symbol and continue to the end of the line.
 /// They can appear anywhere in the code.
