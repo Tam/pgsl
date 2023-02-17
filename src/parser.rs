@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use pest::iterators::Pair;
 use pest::Parser;
 use anyhow::{Context, Result};
+use lazy_static::lazy_static;
+use regex::Regex;
 
 #[derive(Parser)]
 #[grammar = "pgsl.pest"]
@@ -12,7 +14,7 @@ struct PGSLParser;
 #[derive(Debug, Default)]
 pub struct PGSLColumn {
 	pub name : String,
-	pub type_name : String,
+	pub type_of: String,
 	pub attributes : String,
 	pub comments : Vec<String>,
 }
@@ -81,6 +83,14 @@ pub struct PGSLTrigger {
 }
 
 #[derive(Debug, Default)]
+pub struct PGSLView {
+	pub schema : Option<String>,
+	pub name : String,
+	pub columns : Vec<String>,
+	pub body : String,
+}
+
+#[derive(Debug, Default)]
 pub struct PGSLData {
 	pub requires : Vec<PathBuf>,
 	pub schemas : Vec<PGSLSchema>,
@@ -88,12 +98,25 @@ pub struct PGSLData {
 	pub tables : Vec<PGSLTable>,
 	pub triggers : Vec<PGSLTrigger>,
 	pub functions : Vec<PGSLFunction>,
+	pub views : Vec<PGSLView>,
 }
 
 /// Parses the files at the given path into PGSLData
 pub fn parse (path : PathBuf) -> Result<PGSLData> {
-	let path_as_str = path.display().to_string();
-	let unparsed_file = fs::read_to_string(path)
+	lazy_static! {
+		static ref RX : Regex = Regex::new(r"(?i)\.pgs?l$").unwrap();
+	}
+
+	let mut path_as_str = path.display().to_string();
+	if !RX.is_match(path_as_str.as_str()) {
+		path_as_str.push_str(".pgl");
+
+		if fs::try_exists(path_as_str.clone()).is_err() {
+			path_as_str = path_as_str.replace(".pgl", ".pgsl");
+		}
+	}
+
+	let unparsed_file = fs::read_to_string(PathBuf::from(path_as_str.clone()))
 		.with_context(|| format!("Unable to read file {path_as_str}"))?;
 
 	let file = PGSLParser::parse(Rule::pgsl, &unparsed_file)
@@ -117,6 +140,7 @@ pub fn parse (path : PathBuf) -> Result<PGSLData> {
 			Rule::schema => data.schemas.push(parse_schema(line)),
 			Rule::trigger => data.triggers.push(parse_trigger(line)),
 			Rule::function => data.functions.push(parse_function(line)),
+			Rule::view => data.views.push(parse_view(line)),
 			_ => unreachable!("Rule::{:?}", line.as_rule()),
 		}
 	}
@@ -232,7 +256,7 @@ fn parse_column (lines : Pair<Rule>) -> PGSLColumn {
 	for line in lines.into_inner() {
 		match line.as_rule() {
 			Rule::column_name => column.name = line.as_str().to_string(),
-			Rule::type_name => column.type_name = line.as_str().to_string(),
+			Rule::type_name => column.type_of = line.as_str().to_string(),
 			Rule::column_attributes => column.attributes = line.as_str().to_string(),
 			Rule::column_comment => column.comments.push(line.as_str().to_string()),
 			_ => unreachable!(),
@@ -253,7 +277,7 @@ fn parse_trigger (lines : Pair<Rule>) -> PGSLTrigger {
 			Rule::schema_name => trigger.schema = Some(line.as_str().to_string()),
 			Rule::trigger_name => trigger.name = line.as_str().to_string(),
 			Rule::declare => trigger.declare = parse_args(line),
-			Rule::begin => trigger.body = parse_begin(line),
+			Rule::begin => trigger.body = parse_sql(line),
 			Rule::end => trigger.end = parse_end(line),
 			_ => unreachable!(),
 		}
@@ -272,7 +296,7 @@ fn parse_function (lines : Pair<Rule>) -> PGSLFunction {
 			Rule::returns => function.returns = Some(line.as_str().to_string()),
 			Rule::accept => function.accept = parse_args(line),
 			Rule::declare => function.declare = parse_args(line),
-			Rule::begin => function.body = parse_begin(line),
+			Rule::begin => function.body = parse_sql(line),
 			Rule::end => function.end = parse_end(line),
 			_ => unreachable!(),
 		}
@@ -308,13 +332,13 @@ fn parse_args (lines : Pair<Rule>) -> Vec<PGSLArgument> {
 	args
 }
 
-fn parse_begin (lines : Pair<Rule>) -> String {
+fn parse_sql (lines : Pair<Rule>) -> String {
 	let mut sql = String::new();
 
 	for line in lines.into_inner() {
 		if line.as_rule() == Rule::sql {
 			sql.push_str(line.as_str());
-			sql.push_str("\r\n");
+			sql.push('\n');
 		} else { unreachable!() }
 	}
 
@@ -334,6 +358,22 @@ fn parse_end (lines : Pair<Rule>) -> PGSLEnd {
 	}
 
 	end
+}
+
+fn parse_view (lines : Pair<Rule>) -> PGSLView {
+	let mut view = PGSLView::default();
+
+	for line in lines.into_inner() {
+		match line.as_rule() {
+			Rule::schema_name => view.schema = Some(line.as_str().to_string()),
+			Rule::view_name => view.name = line.as_str().to_string(),
+			Rule::column_name => view.columns.push(line.as_str().to_string()),
+			Rule::view_body => view.body = parse_sql(line),
+			_ => unreachable!(),
+		}
+	}
+
+	view
 }
 
 // region: Debug

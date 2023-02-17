@@ -65,3 +65,10 @@ function character.example_func:
 	begin:
 		select * from test;
 	end sql stable
+
+view consumer.trip (id, name):
+	select id, name
+	  from public.trip
+
+view pass_thru:
+	select * from test

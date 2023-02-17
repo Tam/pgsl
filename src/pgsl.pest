@@ -1,6 +1,6 @@
 //! Grammar file for PGSL, the Postgres Schema Language
 pgsl = { SOI ~ NEWLINE* ~ (
-	require | table | interface | schema | trigger | function
+	require | table | interface | schema | trigger | function | view
 )* ~ EOI }
 
 // Require rule
@@ -129,6 +129,17 @@ end = {
 	~ NEWLINE+
 }
 
+// View Rule
+view = {
+	^"view" ~ WHITE_SPACE+ ~ (schema_name ~ ".")? ~ view_name
+	~ (WHITE_SPACE* ~ "(" ~ column_name ~ (WHITE_SPACE*  ~ "," ~ WHITE_SPACE* ~ column_name) ~ ")")?
+	~ end_dec
+	~ view_body
+}
+view_body = {
+	(indent ~ sql ~ NEWLINE+)*
+}
+
 
 // Misc utility rules
 // A lot of these are just aliases to make our AST clearer
@@ -141,6 +152,7 @@ trigger_name = @{ word }
 function_name = @{ word }
 argument_name = @{ word }
 language_name = @{ word }
+view_name = @{ word }
 type_name = @{ (type_name_word ~ ("." ~ type_name_word)+?) }
 type_name_word = @{ !ASCII_DIGIT ~ (char | "(" | ")")+ }
 /// An sql-safe word

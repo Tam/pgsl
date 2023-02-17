@@ -9,6 +9,8 @@ pest_derive = "2.5.5"
 clap = { version = "4.1.4", features = ["derive", "env"] }
 dotenv = { version = "0.15.0", features = ["clap"] }
 anyhow = "1.0.69"
+regex = "1.7.1"
+lazy_static = "1.4.0"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

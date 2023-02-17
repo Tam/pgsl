@@ -1,3 +1,5 @@
+#![feature(fs_try_exists)]
+
 mod parser;
 
 extern crate pest;
