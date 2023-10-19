@@ -67,7 +67,7 @@ function character.example_func:
 	end sql stable
 
 view consumer.trip (id, name):
-	select id, name
+	select id, na12me
 	  from public.trip
 
 view pass_thru:
