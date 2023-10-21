@@ -12,9 +12,16 @@ use std::path::PathBuf;
 struct PGSLParser;
 
 #[derive(Debug, Default)]
+pub struct PGSLColumnType {
+	pub schema: Option<String>,
+	pub name: String,
+	pub args: Vec<i32>,
+}
+
+#[derive(Debug, Default)]
 pub struct PGSLColumn {
     pub name: String,
-    pub type_of: String,
+    pub type_of: PGSLColumnType,
     pub attributes: String,
     pub comments: Vec<String>,
 }
@@ -263,7 +270,7 @@ fn parse_column(lines: Pair<Rule>) -> PGSLColumn {
     for line in lines.into_inner() {
         match line.as_rule() {
             Rule::column_name => column.name = line.as_str().to_string(),
-            Rule::type_name => column.type_of = line.as_str().to_string(),
+            Rule::type_name => column.type_of = parse_column_type(line),
             Rule::column_attributes => column.attributes = line.as_str().to_string(),
             Rule::column_comment => column.comments.push(line.as_str().to_string()),
             _ => unreachable!(),
@@ -271,6 +278,21 @@ fn parse_column(lines: Pair<Rule>) -> PGSLColumn {
     }
 
     column
+}
+
+fn parse_column_type(lines: Pair<Rule>) -> PGSLColumnType {
+	let mut column_type = PGSLColumnType::default();
+
+	for line in lines.into_inner() {
+		match line.as_rule() {
+			Rule::schema_name => column_type.schema = Some(line.as_str().to_string()),
+			Rule::type_name_word => column_type.name = line.as_str().to_string(),
+			Rule::type_name_arg => column_type.args.push(line.as_str().parse::<i32>().unwrap()),
+			_ => unreachable!(),
+		}
+	}
+
+	column_type
 }
 
 fn parse_trigger(lines: Pair<Rule>) -> PGSLTrigger {
