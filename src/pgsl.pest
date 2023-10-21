@@ -153,8 +153,11 @@ function_name = @{ word }
 argument_name = @{ word }
 language_name = @{ word }
 view_name = @{ word }
-type_name = @{ (type_name_word ~ ("." ~ type_name_word)+?) }
-type_name_word = @{ !ASCII_DIGIT ~ (char | "(" | ")")+ }
+/// SQL types
+// Types come in the format of [schema.]type[(number[, number])]
+type_name = { (schema_name ~ ".")? ~ type_name_word ~ ("(" ~ WHITE_SPACE* ~ type_name_arg ~ (WHITE_SPACE* ~ "," ~ WHITE_SPACE* ~ type_name_arg ~ WHITE_SPACE*)? ~ ")")? }
+type_name_word = @{ word }
+type_name_arg = @{ ASCII_DIGIT+ }
 /// An sql-safe word
 word = @{ !ASCII_DIGIT ~ char+ }
 /// The end of a declaration, i.e. "require:", or "table name   :  "
