@@ -12,7 +12,13 @@ use std::path::PathBuf;
 struct PGSLParser;
 
 #[derive(Debug, Default)]
-pub struct PGSLColumnType {
+pub struct PGSLRole {
+	pub name: String,
+	pub options: Vec<String>,
+}
+
+#[derive(Debug, Default)]
+pub struct PGSLType {
 	pub schema: Option<String>,
 	pub name: String,
 	pub args: Vec<i32>,
@@ -21,7 +27,7 @@ pub struct PGSLColumnType {
 #[derive(Debug, Default)]
 pub struct PGSLColumn {
     pub name: String,
-    pub type_of: PGSLColumnType,
+    pub type_of: PGSLType,
     pub attributes: String,
     pub comments: Vec<String>,
 }
@@ -55,7 +61,7 @@ pub struct PGSLSchema {
 #[derive(Debug, Default)]
 pub struct PGSLArgument {
     pub name: String,
-    pub type_of: String,
+    pub type_of: PGSLType,
     pub default: Option<String>,
 }
 
@@ -100,6 +106,7 @@ pub struct PGSLView {
 #[derive(Debug, Default)]
 pub struct PGSLData {
     pub requires: Vec<PathBuf>,
+    pub roles: Vec<PGSLRole>,
     pub schemas: Vec<PGSLSchema>,
     pub interfaces: HashMap<String, PGSLInterface>,
     pub tables: Vec<PGSLTable>,
@@ -140,6 +147,10 @@ pub fn parse(path: PathBuf) -> Result<PGSLData> {
                 let mut requires = parse_require(line);
                 data.requires.append(&mut requires);
             }
+	        Rule::role => {
+		        let mut roles = parse_roles(line);
+		        data.roles.append(&mut roles);
+	        }
             Rule::interface => {
                 let interface = parse_interface(line);
                 data.interfaces.insert(interface.name.clone(), interface);
@@ -164,11 +175,40 @@ fn parse_require(lines: Pair<Rule>) -> Vec<PathBuf> {
         if line.as_rule() == Rule::path {
             requires.push(PathBuf::from(line.as_str()));
         } else {
-            unreachable!()
+            unreachable!();
         }
     }
 
     requires
+}
+
+/// Parses the roles rule
+fn parse_roles(lines: Pair<Rule>) -> Vec<PGSLRole> {
+	let mut roles = Vec::new();
+
+	for line in lines.into_inner() {
+		if line.as_rule() == Rule::role_definition {
+			roles.push(parse_role(line));
+		} else {
+			unreachable!("{:?}", line);
+		}
+	}
+
+	roles
+}
+
+fn parse_role (lines: Pair<Rule>) -> PGSLRole {
+	let mut role = PGSLRole::default();
+
+	for line in lines.into_inner() {
+		match line.as_rule() {
+			Rule::role_name => role.name = line.as_str().to_string(),
+			Rule::role_option => role.options.push(line.as_str().to_string()),
+			_ => unreachable!(),
+		}
+	}
+
+	role
 }
 
 /// Parses the interface rule
@@ -270,7 +310,7 @@ fn parse_column(lines: Pair<Rule>) -> PGSLColumn {
     for line in lines.into_inner() {
         match line.as_rule() {
             Rule::column_name => column.name = line.as_str().to_string(),
-            Rule::type_name => column.type_of = parse_column_type(line),
+            Rule::type_name => column.type_of = parse_type(line),
             Rule::column_attributes => column.attributes = line.as_str().to_string(),
             Rule::column_comment => column.comments.push(line.as_str().to_string()),
             _ => unreachable!(),
@@ -280,8 +320,8 @@ fn parse_column(lines: Pair<Rule>) -> PGSLColumn {
     column
 }
 
-fn parse_column_type(lines: Pair<Rule>) -> PGSLColumnType {
-	let mut column_type = PGSLColumnType::default();
+fn parse_type(lines: Pair<Rule>) -> PGSLType {
+	let mut column_type = PGSLType::default();
 
 	for line in lines.into_inner() {
 		match line.as_rule() {
@@ -340,7 +380,7 @@ fn parse_argument(lines: Pair<Rule>) -> PGSLArgument {
     for line in lines.into_inner() {
         match line.as_rule() {
             Rule::argument_name => arg.name = line.as_str().to_string(),
-            Rule::type_name => arg.type_of = line.as_str().to_string(),
+            Rule::type_name => arg.type_of = parse_type(line),
             Rule::default_value => arg.default = Some(line.as_str().to_string()),
             _ => unreachable!(),
         }

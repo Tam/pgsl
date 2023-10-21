@@ -41,6 +41,10 @@ struct Cli {
     /// Postgres port
     #[arg(long, default_value_t = 5432, env = "PGPORT")]
     port: u16,
+
+	/// Perform a dry run to see what will change
+	#[arg(long, default_value_t = false)]
+	dryrun: bool,
 }
 
 fn main() -> Result<()> {
@@ -53,10 +57,8 @@ fn main() -> Result<()> {
     }
 
     let input = cli.input.unwrap_or(PathBuf::from("schema/_schema"));
-    let data = parser::parse(input)?;
-    println!("{data:#?}");
-
-    // println!("{:?}", cli.host);
+    let ast = parser::parse(input)?;
+    println!("{ast:#?}");
 
     Ok(())
 }

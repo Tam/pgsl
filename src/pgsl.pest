@@ -1,6 +1,6 @@
 //! Grammar file for PGSL, the Postgres Schema Language
 pgsl = { SOI ~ NEWLINE* ~ (
-	require | table | interface | schema | trigger | function | view
+	require | role | table | interface | schema | trigger | function | view
 )* ~ EOI }
 
 // Require rule
@@ -10,6 +10,21 @@ path = @{ path_word ~ ("/" ~ path_word)* }
 path_word = @{ (!invalid_file_name_chars ~ !COMMENT ~ ANY)+ }
 invalid_file_name_chars = {
 	"/" | "\\" | "|" | ":" | "*" | "?" | "<" | ">" | "\"" | "'" | NEWLINE
+}
+
+// Role rule
+/// Role defines a list of PGSL roles
+role = {
+    ^"role" ~ end_dec
+        ~ role_definition+
+}
+role_definition = {
+    indent ~ role_name
+        ~ (
+            WHITE_SPACE+ ~ ^"with" ~ WHITE_SPACE+
+            ~ role_option ~ (WHITE_SPACE* ~ ^"," ~ WHITE_SPACE+ ~ role_option)*?
+        )?
+        ~ NEWLINE+?
 }
 
 // Table rule
@@ -153,9 +168,18 @@ function_name = @{ word }
 argument_name = @{ word }
 language_name = @{ word }
 view_name = @{ word }
+role_option = @{ word }
 /// SQL types
 // Types come in the format of [schema.]type[(number[, number])]
-type_name = { (schema_name ~ ".")? ~ type_name_word ~ ("(" ~ WHITE_SPACE* ~ type_name_arg ~ (WHITE_SPACE* ~ "," ~ WHITE_SPACE* ~ type_name_arg ~ WHITE_SPACE*)? ~ ")")? }
+type_name = {
+    (schema_name ~ ".")?
+    ~ type_name_word
+    ~ ("("
+        ~ WHITE_SPACE* ~ type_name_arg
+        ~ (WHITE_SPACE* ~ "," ~ WHITE_SPACE* ~ type_name_arg ~ WHITE_SPACE*)?
+        ~ ")"
+    )?
+}
 type_name_word = @{ word }
 type_name_arg = @{ ASCII_DIGIT+ }
 /// An sql-safe word
