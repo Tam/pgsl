@@ -8,6 +8,14 @@ Will come with its own migrator so all you have to do is write the schema. The
 migrator will check the structure of the database and only migrate any changes.
 It will also warn about destructive actions (like dropping columns or enums).
 
+### Testing
+
+```shell
+cargo run -- sample.pgl --debug
+```
+
+### Sample
+
 ```text
 # interfaces/archive.pgl
 
