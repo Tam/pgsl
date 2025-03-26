@@ -102,6 +102,7 @@ pub struct PGSLView {
 
 #[derive(Debug, Default)]
 pub struct PGSLData {
+	pub includes: Vec<PathBuf>,
 	pub requires: Vec<PathBuf>,
 	pub roles: Vec<PGSLRole>,
 	pub schemas: Vec<PGSLSchema>,
@@ -140,8 +141,12 @@ pub fn parse(path: PathBuf) -> Result<PGSLData> {
 	for line in file.into_inner() {
 		match line.as_rule() {
 			Rule::EOI => (),
+			Rule::include => {
+				let mut includes = parse_require_or_include(line);
+				data.includes.append(&mut includes);
+			}
 			Rule::require => {
-				let mut requires = parse_require(line);
+				let mut requires = parse_require_or_include(line);
 				data.requires.append(&mut requires);
 			}
 			Rule::role => {
@@ -165,7 +170,7 @@ pub fn parse(path: PathBuf) -> Result<PGSLData> {
 }
 
 /// Parses the require rule
-fn parse_require(lines: Pair<Rule>) -> Vec<PathBuf> {
+fn parse_require_or_include(lines: Pair<Rule>) -> Vec<PathBuf> {
 	let mut requires = Vec::new();
 	
 	for line in lines.into_inner() {

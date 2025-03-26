@@ -1,0 +1,10 @@
+require:
+	interfaces/timestamp
+	./public.account
+
+table public.user:
+	extends:
+		timestamp
+	columns:
+		id uuid primary key references public.account (id) on delete cascade not null
+		name varchar not null

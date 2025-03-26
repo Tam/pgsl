@@ -1,11 +1,13 @@
 //! Grammar file for PGSL, the Postgres Schema Language
 pgsl = { SOI ~ NEWLINE* ~ (
-	require | role | table | interface | schema | trigger | function | view
+	include | require | role | table | interface | schema | trigger | function | view
 )* ~ EOI }
 
-// Require rule
-/// Require defines a list of PGSL files that this file needs
+// Include & Require rules
+/// Include/Require defines a list of PGSL files that this file needs
+include = { ^"include" ~ end_dec ~ (indent ~ path* ~ NEWLINE+?)+ }
 require = { ^"require" ~ end_dec ~ (indent ~ path* ~ NEWLINE+?)+ }
+
 path = @{ path_word ~ ("/" ~ path_word)* }
 path_word = @{ (!invalid_file_name_chars ~ !COMMENT ~ ANY)+ }
 invalid_file_name_chars = {

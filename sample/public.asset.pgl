@@ -1,0 +1,10 @@
+require:
+  interfaces/timestamp
+
+table public.asset:
+  extends:
+    timestamp
+  columns:
+    id uuid primary key default public.uuid_generate_v1mc() not null
+    file jsonb not null
+    filename varchar generated always as (file->'filename') stored

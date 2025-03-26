@@ -1,0 +1,13 @@
+role:
+	member
+	agent
+	admin
+
+schema public:
+	grant all to public
+
+schema private:
+	grant all to public
+
+include:
+	auth/_schema

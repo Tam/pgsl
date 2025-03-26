@@ -1,0 +1,13 @@
+interface timestamp:
+	columns:
+		created_at timestamptz not null default now()
+			@behaviour -insert -update
+		updated_at timestamptz not null default now()
+			@behaviour -insert -update
+
+trigger before update on interface timestamp:
+	begin:
+		new.updated_at := now();
+
+		return new;
+	end plpgsql volatile

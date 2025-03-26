@@ -1,0 +1,10 @@
+require:
+	interfaces/timestamp
+
+table public.account:
+	extends:
+		timestamp
+	columns:
+		id uuid primary key default public.uuid_generate_v1mc()
+		email varchar not null
+		password varchar not null
