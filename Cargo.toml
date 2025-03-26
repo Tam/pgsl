@@ -11,6 +11,7 @@ dotenv = { version = "0.15.0", features = ["clap"] }
 anyhow = "1.0.69"
 regex = "1.7.1"
 lazy_static = "1.4.0"
+log = "0.4.27"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

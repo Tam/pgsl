@@ -7,7 +7,7 @@ use pest::Parser;
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use crate::parser::pgsl_role::PGSLRole;
 
 #[derive(Parser)]
@@ -115,6 +115,20 @@ pub struct PGSLData {
 
 /// Parses the files at the given path into PGSLData
 pub fn parse(path: PathBuf) -> Result<PGSLData> {
+	let mut data = PGSLData::default();
+	let base_path = path.parent().unwrap_or(Path::new(""));
+	let path = PathBuf::from(path.file_name().unwrap());
+	
+	internal_parse(base_path, path.clone(), &mut data)?;
+	
+	Ok(data)
+}
+
+fn internal_parse(base_path: &Path, path: PathBuf, data: &mut PGSLData) -> Result<()> {
+	let path = base_path.join(path);
+	
+	println!("Parsing {}", path.display());
+	
 	lazy_static! {
         static ref RX: Regex = Regex::new(r"(?i)\.pgs?l$").unwrap();
     }
@@ -136,17 +150,49 @@ pub fn parse(path: PathBuf) -> Result<PGSLData> {
 		.next()
 		.unwrap();
 	
-	let mut data = PGSLData::default();
-	
 	for line in file.into_inner() {
 		match line.as_rule() {
 			Rule::EOI => (),
 			Rule::include => {
 				let mut includes = parse_require_or_include(line);
+				
+				for include in includes.iter() {
+					if data.includes.contains(&include) || data.requires.contains(&include) {
+						continue;
+					}
+					
+					if include.starts_with("./") {
+						let parent = path.parent().unwrap_or(Path::new(""));
+						let parent = parent.strip_prefix(base_path)?;
+						let include = parent.join(include.file_name().unwrap());
+						
+						internal_parse(base_path, include.clone(), data)?;
+					} else {
+						internal_parse(base_path, include.clone(), data)?;
+					}
+				}
+				
 				data.includes.append(&mut includes);
 			}
 			Rule::require => {
 				let mut requires = parse_require_or_include(line);
+				
+				for require in requires.iter() {
+					if data.includes.contains(&require) || data.requires.contains(&require) {
+						continue;
+					}
+					
+					if require.starts_with("./") {
+						let parent = path.parent().unwrap_or(Path::new(""));
+						let parent = parent.strip_prefix(base_path)?;
+						let require = parent.join(require.file_name().unwrap());
+						
+						internal_parse(base_path, require.clone(), data)?;
+					} else {
+						internal_parse(base_path, require.clone(), data)?;
+					}
+				}
+				
 				data.requires.append(&mut requires);
 			}
 			Rule::role => {
@@ -166,7 +212,7 @@ pub fn parse(path: PathBuf) -> Result<PGSLData> {
 		}
 	}
 	
-	Ok(data)
+	Ok(())
 }
 
 /// Parses the require rule
