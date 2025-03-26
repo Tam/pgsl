@@ -47,6 +47,9 @@ struct Cli {
 }
 
 fn main() -> Result<()> {
+	use std::time::Instant;
+	let now = Instant::now();
+	
     dotenv().ok();
     let cli = Cli::parse();
 
@@ -58,6 +61,9 @@ fn main() -> Result<()> {
     let input = cli.input.unwrap_or(PathBuf::from("schema/_schema"));
     let ast = parser::parse(input)?;
     println!("{ast:#?}");
-
+	
+	let elapsed = now.elapsed();
+	println!("Elapsed: {:.2?}", elapsed);
+	
     Ok(())
 }

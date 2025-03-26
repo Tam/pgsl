@@ -127,8 +127,6 @@ pub fn parse(path: PathBuf) -> Result<PGSLData> {
 fn internal_parse(base_path: &Path, path: PathBuf, data: &mut PGSLData) -> Result<()> {
 	let path = base_path.join(path);
 	
-	println!("Parsing {}", path.display());
-	
 	lazy_static! {
         static ref RX: Regex = Regex::new(r"(?i)\.pgs?l$").unwrap();
     }
