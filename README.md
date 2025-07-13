@@ -107,3 +107,30 @@ There are some features in this language that differ from Postgres' standard.
 The main one being interfaces. Interfaces are similar to built-in postgres 
 inheritance, but instead of the inherited data being stored in a separate table,
 we add the columns, triggers, etc. to the table being extended.
+
+### TODO
+- We need a way of running additional custom migration logic for, example, 
+  moving data from an old column to a new column. Perhaps something like:
+  ```diff
+  interface table archive:
+    columns:
+  -    is_archived boolean default false
+  -      Whether or not this item is archived (soft-deleted)
+  -      @omit create
+  +    is_public boolean default true
+  +      comment:
+  +        Whether this item is public
+  +        @behaviour -insert -update
+  +      migrate:
+  +        update [table] set is_public = not is_archived
+      archived_at timestamptz
+        When this item was archived
+        @omit create,update
+      restored_at timestamptz
+        When this item was restored
+        @omit create,updat
+  ```
+  In the example above we're changing an interface, so we use the `[table]`
+  placeholder that should be automatically replaced with the actual table name.
+  `migrate:` should support anything available in the standard `do $$` including
+  declaring variables. Here we're just using simple SQL.
