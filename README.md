@@ -122,7 +122,9 @@ we add the columns, triggers, etc. to the table being extended.
   +        Whether this item is public
   +        @behaviour -insert -update
   +      migrate:
-  +        update [table] set is_public = not is_archived
+  +        begin
+  +          update [table] set is_public = not is_archived;
+  +        exception when undefined_column then end
       archived_at timestamptz
         When this item was archived
         @omit create,update
@@ -133,4 +135,7 @@ we add the columns, triggers, etc. to the table being extended.
   In the example above we're changing an interface, so we use the `[table]`
   placeholder that should be automatically replaced with the actual table name.
   `migrate:` should support anything available in the standard `do $$` including
-  declaring variables. Here we're just using simple SQL.
+  declaring variables. Here we're wrapping the update in a catch so we don't 
+  have to worry about the `is_archived` column no longer existing in future 
+  updates. We should also support multiple `migrate:` blocks, run in order of 
+  definition, siloed out from each other.
