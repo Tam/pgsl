@@ -77,3 +77,33 @@ function character.example_func:
     select * from test;
   end sql stable
 ```
+
+### Notes-to-self on migrations
+- There should be a clear order of operations:
+  1. Creating
+     1. Types
+     2. Tables
+     3. Columns
+     4. Indexes / Foreign Keys
+     5. Views
+     6. Functions
+     7. RLS
+     8. Triggers
+  2. Updating
+     1. Column definitions
+     2. Views
+     3. Functions
+     4. RLS
+     5. Triggers
+  3. Deleting
+     - The same items as creating, but in reverse order
+- Some operations above can happen out of order if they are needed for others 
+  to complete. For example, we might need to add a new column before creating a
+  table if that table references that new column (although this could probably 
+  be handled in the foreign keys step?)
+
+### Notes-to-self on Custom Language Features
+There are some features in this language that differ from Postgres' standard.
+The main one being interfaces. Interfaces are similar to built-in postgres 
+inheritance, but instead of the inherited data being stored in a separate table,
+we add the columns, triggers, etc. to the table being extended.
